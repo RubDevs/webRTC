@@ -1,13 +1,11 @@
-'use strict';
-
 //Loading dependencies & initializing express
-var os = require('os'); //for operating system-related utility methods and properties
-var express = require('express');
-var app = express();
-var http = require('http'); //for creating http server
+const os = require('os');
+const express = require('express');
+const app = express();
+const http = require('http');
 
 //For signalling in WebRTC
-var socketIO = require('socket.io');
+const socketIO = require('socket.io');
 
 //Define the folder which contains the CSS and JS for the fontend
 app.use(express.static('public'));
@@ -30,12 +28,12 @@ var io = socketIO(server);
 //Implementing Socket.io
 //connection is a synonym of reserved event connect
 //connection event is fired as soon as a client connects to this socket.
-io.sockets.on('connection', function (socket) {
+io.on('connection', function (socket) {
   // Convenience function to log server messages on the client.
   // Arguments is an array like object which contains all the arguments of log().
   // To push all the arguments of log() in array, we have to use apply().
   function log() {
-    var array = ['Message from server:'];
+    let array = ['Message from server:'];
     array.push.apply(array, arguments);
     socket.emit('log', array);
   }
@@ -43,7 +41,7 @@ io.sockets.on('connection', function (socket) {
   //Defining Server behavious on Socket Events
   socket.on('message', function (message, room) {
     log('Client said: ', message);
-    //server should send the receive only in room
+    //server should send the received message only in room
     socket.in(room).emit('message', message, room);
   });
 
@@ -52,46 +50,30 @@ io.sockets.on('connection', function (socket) {
     log('Received request to create or join room ' + room);
 
     //Finding clients in the current room
-    var clientsInRoom = io.of('/').adapter.rooms.get(room);
-    var numClients = clientsInRoom ? 1 : 0;
+    let clientsInRoom = io.of('/').adapter.rooms.get(room);
+    let numClients = clientsInRoom ? 1 : 0;
     log('Room ' + room + ' now has ' + numClients + ' client(s)');
 
     //If no client is in the room, create a room and add the current client
     if (numClients === 0) {
       socket.join(room);
       log('Client ID ' + socket.id + ' created room ' + room);
-      console.log(io.of('/').adapter.rooms.get(room));
-      for (let [key, value] of io.of('/').adapter.rooms) {
-        console.log(key + ' = ' + value);
-      }
       socket.emit('created', room, socket.id);
     }
 
     //If one client is already in the room, add this client in the room
     else if (numClients === 1) {
       log('Client ID ' + socket.id + ' joined room ' + room);
-      io.sockets.in(room).emit('join', room);
+      io.to(room).emit('join', room);
       socket.join(room);
       socket.emit('joined', room, socket.id);
-      io.sockets.in(room).emit('ready');
+      io.to(room).emit('ready');
     }
 
     //If two clients are already present in the room, do not add the current client in the room
     else {
       // max two clients
       socket.emit('full', room);
-    }
-  });
-
-  //Utility event
-  socket.on('ipaddr', function () {
-    var ifaces = os.networkInterfaces();
-    for (var dev in ifaces) {
-      ifaces[dev].forEach(function (details) {
-        if (details.family === 'IPv4' && details.address !== '127.0.0.1') {
-          socket.emit('ipaddr', details.address);
-        }
-      });
     }
   });
 

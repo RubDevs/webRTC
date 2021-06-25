@@ -1,29 +1,27 @@
-'use strict';
-
 //Defining some global utility variables
-var isChannelReady = false;
-var isInitiator = false;
-var isStarted = false;
-var localStream;
-var pc;
-var remoteStream;
-var turnReady;
+let isChannelReady = false;
+let isInitiator = false;
+let isStarted = false;
+let localStream;
+let peerConnection;
+let remoteStream;
+let turnReady;
 
 //Initialize turn/stun server here
 //turnconfig will be defined in public/js/config.js
-var pcConfig = turnConfig;
+const pcConfig = turnConfig;
 
 //Set local stream constraints
-var localStreamConstraints = {
+const localStreamConstraints = {
   audio: true,
   video: true,
 };
 
 // Prompting for room name:
-var room = prompt('Enter room name:');
+let room = prompt('Enter room name:');
 
 //Initializing socket.io
-var socket = io.connect();
+const socket = io.connect();
 
 //Ask server to add in the room if room name is provided by the user
 if (room !== '') {
@@ -72,16 +70,16 @@ socket.on('message', function (message, room) {
     if (!isInitiator && !isStarted) {
       maybeStart();
     }
-    pc.setRemoteDescription(new RTCSessionDescription(message));
+    peerConnection.setRemoteDescription(new RTCSessionDescription(message));
     doAnswer();
   } else if (message.type === 'answer' && isStarted) {
-    pc.setRemoteDescription(new RTCSessionDescription(message));
+    peerConnection.setRemoteDescription(new RTCSessionDescription(message));
   } else if (message.type === 'candidate' && isStarted) {
     var candidate = new RTCIceCandidate({
       sdpMLineIndex: message.label,
       candidate: message.candidate,
     });
-    pc.addIceCandidate(candidate);
+    peerConnection.addIceCandidate(candidate);
   } else if (message === 'bye' && isStarted) {
     handleRemoteHangup();
   }
@@ -123,7 +121,7 @@ function maybeStart() {
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection');
     createPeerConnection();
-    pc.addStream(localStream);
+    peerConnection.addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
     if (isInitiator) {
@@ -140,10 +138,10 @@ window.onbeforeunload = function () {
 //Creating peer connection
 function createPeerConnection() {
   try {
-    pc = new RTCPeerConnection(pcConfig);
-    pc.onicecandidate = handleIceCandidate;
-    pc.onaddstream = handleRemoteStreamAdded;
-    pc.onremovestream = handleRemoteStreamRemoved;
+    peerConnection = new RTCPeerConnection(pcConfig);
+    peerConnection.onicecandidate = handleIceCandidate;
+    peerConnection.onaddstream = handleRemoteStreamAdded;
+    peerConnection.onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnnection');
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
@@ -177,21 +175,20 @@ function handleCreateOfferError(event) {
 //Function to create offer
 function doCall() {
   console.log('Sending offer to peer');
-  pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
+  peerConnection.createOffer(setLocalAndSendMessage, handleCreateOfferError);
 }
 
 //Function to create answer for the received offer
 function doAnswer() {
   console.log('Sending answer to peer.');
-  pc.createAnswer().then(
-    setLocalAndSendMessage,
-    onCreateSessionDescriptionError,
-  );
+  peerConnection
+    .createAnswer()
+    .then(setLocalAndSendMessage, onCreateSessionDescriptionError);
 }
 
 //Function to set description of local media
 function setLocalAndSendMessage(sessionDescription) {
-  pc.setLocalDescription(sessionDescription);
+  peerConnection.setLocalDescription(sessionDescription);
   console.log('setLocalAndSendMessage sending message', sessionDescription);
   sendMessage(sessionDescription, room);
 }
@@ -225,6 +222,6 @@ function handleRemoteHangup() {
 
 function stop() {
   isStarted = false;
-  pc.close();
-  pc = null;
+  peerConnection.close();
+  peerConnection = null;
 }
