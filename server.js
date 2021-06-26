@@ -1,11 +1,15 @@
 //Loading dependencies & initializing express
 const os = require('os');
 const express = require('express');
+const cors = require('cors');
 const app = express();
 const http = require('http');
 
 //For signalling in WebRTC
 const socketIO = require('socket.io');
+
+//Use cors
+app.use(cors());
 
 //Define the folder which contains the CSS and JS for the fontend
 app.use(express.static('public'));
