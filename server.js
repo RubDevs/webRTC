@@ -27,7 +27,11 @@ var server = http.createServer(app);
 server.listen(process.env.PORT || 8000);
 
 //Initialize socket.io
-var io = socketIO(server);
+var io = socketIO(server, {
+  cors: {
+    origin: '*',
+  },
+});
 
 //Implementing Socket.io
 //connection is a synonym of reserved event connect
