@@ -32,7 +32,6 @@ var io = socketIO(server, {
     origin: '*',
   },
 });
-
 //Implementing Socket.io
 //connection event is fired as soon as a client connects to this socket.
 io.on('connection', function (socket) {
@@ -40,8 +39,7 @@ io.on('connection', function (socket) {
   socket.on('create or join', function (room) {
     //Finding clients in the current room
     let clientsInRoom = io.of('/').adapter.rooms.get(room);
-    let numClients = clientsInRoom ? 1 : 0;
-
+    let numClients = clientsInRoom ? clientsInRoom.size : 0;
     //If no client is in the room, create a room and add the current client
     if (numClients === 0) {
       socket.join(room);
